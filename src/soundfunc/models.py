@@ -18,10 +18,18 @@ class Note:
     start: float
     end: float
     velocity: float  # 0..1
+    confidence: float = 1.0  # 0..1 — насколько транскрипция уверена в ноте
 
     @property
     def name(self) -> str:
         return midi_to_name(self.pitch)
+
+
+@dataclass
+class DrumHit:
+    kind: str  # "kick" | "snare" | "hat"
+    time: float
+    strength: float  # 0..1
 
 
 @dataclass
@@ -66,4 +74,10 @@ class Analysis:
     rhythm: Rhythm
     key: Key
     chords: list[ChordSegment]
-    notes: list[Note] = field(default_factory=list)
+    notes: list[Note] = field(default_factory=list)  # ноты всего микса (без разделения)
+    tracks: dict[str, list[Note]] = field(default_factory=dict)  # ноты по инструментам
+    drums: list[DrumHit] = field(default_factory=list)
+
+    def note_tracks(self) -> dict[str, list[Note]]:
+        """Ноты по дорожкам: инструменты, если трек разделяли, иначе весь микс."""
+        return self.tracks if self.tracks else {"mix": self.notes}

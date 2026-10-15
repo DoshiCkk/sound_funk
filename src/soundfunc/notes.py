@@ -30,8 +30,9 @@ def transcribe(y: np.ndarray, sr: int, *, t0: float = 0.0, hop: int = 512,
     ))
     mag = cqt.reshape(n_pitches, BINS_PER_SEMITONE, -1).max(axis=1)  # (88, T)
     mag_db = librosa.amplitude_to_db(mag, ref=np.max)
+    frame_max = mag_db.max(axis=0)
 
-    active = (mag_db > mag_db.max(axis=0, keepdims=True) + rel_db) & (mag_db > abs_db)
+    active = (mag_db > frame_max[None, :] + rel_db) & (mag_db > abs_db)
     active &= _pitch_peaks(mag)
     for off in HARMONIC_OFFSETS:
         below_active = np.zeros_like(active)
@@ -50,10 +51,25 @@ def transcribe(y: np.ndarray, sr: int, *, t0: float = 0.0, hop: int = 512,
             if end - start < min_dur:
                 continue
             velocity = float(np.clip((mag_db[i, s:e].max() - abs_db) / -abs_db, 0.0, 1.0))
+            confidence = note_confidence(mag_db[i, s:e], frame_max[s:e], rel_db, end - start)
             notes.append(Note(MIDI_LO + i, round(start + t0, 3), round(end + t0, 3),
-                              round(velocity, 2)))
+                              round(velocity, 2), confidence))
     notes.sort(key=lambda n: (n.start, n.pitch))
     return notes
+
+
+def note_confidence(note_db: np.ndarray, frame_max_db: np.ndarray, rel_db: float,
+                    duration: float) -> float:
+    """Эвристическая уверенность 0..1.
+
+    Нота уверенная, если она близка к самому громкому звуку в своих кадрах
+    (а не еле переползла порог rel_db) и держится долго. Короткие тихие
+    всплески — частые ложные срабатывания, они получают «холодный» цвет.
+    """
+    margin = float(np.mean(note_db - frame_max_db))  # 0 дБ — самая громкая в кадре
+    level = float(np.clip(1.0 - margin / rel_db, 0.0, 1.0))
+    stability = min(1.0, duration / 0.3)
+    return round(level ** 0.7 * (0.4 + 0.6 * stability), 2)
 
 
 def _pitch_peaks(mag: np.ndarray) -> np.ndarray:

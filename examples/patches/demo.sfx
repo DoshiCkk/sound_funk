@@ -1,0 +1,25 @@
+# Демо-трек: Am – F – C – G, 120 BPM — бочка, хэт, бас, аккорды и арпеджио
+# sfunc synth -f examples/patches/demo.sfx -d 16 --seed 1 -o demo.wav
+beat = 0.5
+bar = 4 * beat
+root = seq(bar, 45, 41, 48, 43)        # A2 F2 C3 G2 — по такту на аккорд
+third = seq(bar, 3, 4, 4, 4)           # Am — малая терция, остальные мажорные
+
+# аккорды: трезвучие октавой выше баса, пила через ФНЧ
+chord = saw(phase(midi(root + 12))) + saw(phase(midi(root + 12 + third))) + saw(phase(midi(root + 19)))
+pad = lowpass(chord, 1200) * (0.6 + 0.4 * exp(-3 * (t % bar)))
+
+# бас: корень на каждую долю
+bass = tanh(1.5 * sin(phase(midi(root)))) * exp(-4 * (t % beat))
+
+# арпеджио восьмыми; 1 — метка «терция аккорда»
+step = beat / 2
+up = seq(step, 0, 1, 7, 12, 7, 1, 12, 19)
+arp = tri(phase(midi(root + 24 + where(up == 1, third, up)))) * exp(-10 * (t % step))
+
+# ударные: бочка на долю, хэт на слабые восьмые
+kt = t % beat
+kick = sin(phase(45 + 160 * exp(-35 * kt))) * exp(-9 * kt)
+hat = highpass(noise(), 7000) * exp(-60 * ((t + beat / 2) % beat))
+
+0.25 * pad + 0.35 * bass + 0.3 * arp + 0.7 * tanh(2 * kick) + 0.15 * hat

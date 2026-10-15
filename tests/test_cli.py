@@ -43,6 +43,22 @@ def test_analyze_and_roll_on_synthesized_file(tmp_path):
     assert png.stat().st_size > 0 and mid.stat().st_size > 0
 
 
+def test_view_builds_html_without_opening(tmp_path):
+    wav, html = tmp_path / "c.wav", tmp_path / "c.html"
+    chord = 'sin(phase(note("C4"))) + sin(phase(note("E4"))) + sin(phase(note("G4")))'
+    assert runner.invoke(app, ["synth", chord, "-d", "3", "-o", str(wav)]).exit_code == 0
+    res = runner.invoke(app, ["view", str(wav), "--no-open", "-o", str(html)])
+    assert res.exit_code == 0, res.output
+    assert "const DATA = {" in html.read_text(encoding="utf-8")
+
+
+def test_unknown_stem_rejected(tmp_path):
+    wav = tmp_path / "c.wav"
+    assert runner.invoke(app, ["synth", "sin(2*pi*220*t)", "-d", "1", "-o", str(wav)]).exit_code == 0
+    res = runner.invoke(app, ["analyze", str(wav), "--stem", "flute"])
+    assert res.exit_code != 0
+
+
 def test_functions_lists_reference():
     res = runner.invoke(app, ["functions"])
     assert res.exit_code == 0
