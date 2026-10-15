@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+dist/
+build/
+
+# аудио и результаты анализа не коммитим
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+out/
+*.png
+!docs/*.png

@@ -1,0 +1,6 @@
+# Колокол: FM-синтез (несущая + модулятор с негармоническим отношением 1.4)
+# sfunc synth -f examples/patches/bell.sfx -d 4 -p f=440 -o bell.wav
+# Параметр f задаётся через -p; если не задан — используйте note()
+carrier = 2 * pi * f * t
+index = 4 * exp(-2 * t)
+sin(carrier + index * sin(1.4 * carrier)) * exp(-1.2 * t)

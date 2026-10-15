@@ -1,0 +1,4 @@
+# Бочка: синус с быстрым падением высоты тона
+# sfunc synth -f examples/patches/kick.sfx -d 0.6 -o kick.wav
+f = 45 + 160 * exp(-35 * t)
+tanh(2 * sin(phase(f)) * exp(-7 * t))

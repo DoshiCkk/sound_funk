@@ -1,0 +1,14 @@
+# Арпеджио Am — C — G — F (по такту на аккорд) + бочка на каждую долю, 120 BPM
+# sfunc synth -f examples/patches/arp.sfx -d 16 -o arp.wav
+beat = 0.5
+step = beat / 4                       # шестнадцатые
+root = seq(4 * beat, 57, 60, 55, 53)  # A3 C4 G3 F3
+third = seq(4 * beat, 3, 4, 4, 4)     # Am — малая терция, остальные мажорные
+up = seq(step, 0, 7, 12, 1, 19, 1, 12, 7)   # 1 — метка «терция через октаву»
+f = midi(root + where(up == 1, 12 + third, up))
+arp = lowpass(saw(phase(f)), 1800) * exp(-14 * (t % step))
+
+kt = t % beat                         # время от начала доли
+kick = sin(phase(45 + 160 * exp(-35 * kt))) * exp(-9 * kt)
+
+0.6 * arp + 0.8 * tanh(2 * kick)
